@@ -1,0 +1,82 @@
+class Particles:
+    def __init__(self, n, nusp):
+        self.coord = np.zeros((6, n))   # righe: x, px, y, py, delta, ct
+        self.spin  = np.zeros((3, n))   # righe: sx, sy, sz
+        self.N = n
+        self.spin[1, :] = 1.0           # spin iniziale lungo y
+        self.nusp = nusp
+
+    def init_spin_polarized(
+        self,
+        polarization=0.92,
+        rng=None,
+        shuffle=True,
+    ):
+        """
+        Initialize spins fully parallel or antiparallel to the vertical axis.
+    
+        The fractions of spin-up and spin-down particles are chosen to
+        reproduce the requested vertical polarization as closely as possible:
+    
+            P_y = (N_up - N_down) / N
+    
+        Parameters
+        ----------
+        polarization : float, optional
+            Requested vertical polarization in the interval [-1, 1].
+            A positive value means polarization along +y.
+            Default is 0.92.
+        rng : numpy.random.Generator, optional
+            Random-number generator used only to shuffle the particle order.
+        shuffle : bool, optional
+            If True, randomly mix spin-up and spin-down particles.
+            Default is True.
+    
+        Returns
+        -------
+        float
+            The actual vertical polarization obtained with the finite
+            number of particles.
+        """
+        if not -1.0 <= polarization <= 1.0:
+            raise ValueError("polarization must be between -1 and 1")
+    
+        if rng is None:
+            rng = np.random.default_rng()
+    
+        # Number of particles with spin along +y
+        n_up = int(round(0.5 * (1.0 + polarization) * self.N))
+        n_down = self.N - n_up
+    
+        sy = np.empty(self.N, dtype=float)
+        sy[:n_up] = 1.0
+        sy[n_up:] = -1.0
+    
+        if shuffle:
+            rng.shuffle(sy)
+    
+        self.spin.fill(0.0)
+        self.spin[1, :] = sy
+       
+        return np.mean(self.sy)
+    
+    
+    @property
+    def x(self):     return self.coord[0]
+    @property
+    def xp(self):    return self.coord[1]
+    @property
+    def y(self):     return self.coord[2]
+    @property
+    def yp(self):    return self.coord[3]
+    @property
+    def delta(self):  return self.coord[4]
+    @property
+    def ct(self): return self.coord[5]
+
+    @property
+    def sx(self): return self.spin[0]
+    @property
+    def sy(self): return self.spin[1]
+    @property
+    def sz(self): return self.spin[2]

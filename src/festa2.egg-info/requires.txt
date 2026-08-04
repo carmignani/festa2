@@ -1,0 +1,5 @@
+numpy
+scipy
+accelerator-toolbox
+xtrack
+xpart
