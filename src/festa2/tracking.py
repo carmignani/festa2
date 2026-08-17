@@ -67,46 +67,90 @@ def simulate_one_frequency(
     nturns : int
         Total number of turns.
     save_every : int, optional
-        Number of turns between saved polarization samples. Default is 1.
+        Number of turns between saved samples. Default is 1.
     average_blocks : bool, optional
-        If False, save the instantaneous polarization every `save_every`
-        turns. If True, save the mean polarization over consecutive blocks
-        of `save_every` turns. Default is False.
+        If False, save instantaneous quantities every `save_every` turns.
+        If True, save the mean quantities over consecutive blocks of
+        `save_every` turns. Default is False.
+    seed : int or None, optional
+        Random seed passed to the first AT tracking call.
 
     Returns
     -------
     result : dict
-        Dictionary containing:
-        - ``tune``: shaker tune;
-        - ``turns``: turn numbers associated with the saved samples;
-        - ``polarization``: array with shape (3, nsamples);
-        - ``px``, ``py``, ``pz``: polarization components;
-        - ``part_final``: final particle ensemble.
+        Dictionary containing polarization and vertical orbital quantities
+        versus turn number, together with summary values and the final
+        particle ensemble.
     """
+
     if nturns < 1:
         raise ValueError("nturns must be at least 1")
 
     if save_every < 1:
         raise ValueError("save_every must be at least 1")
 
+    # ------------------------------------------------------------------
     # Independent copies for this frequency
+    # ------------------------------------------------------------------
+
     part = deepcopy(part_initial)
     shaker = deepcopy(shaker_initial)
+
     shaker.tune = tune
 
+    # ------------------------------------------------------------------
+    # Histories
+    # ------------------------------------------------------------------
+
     turns = []
+
     polarization_history = []
 
-    # Initial beam polarization at turn 0
-    initial_polarization = np.mean(part.spin, axis=1)
+    y_mean_history = []
+    y_std_history = []
+
+    # ------------------------------------------------------------------
+    # Initial values at turn 0
+    # ------------------------------------------------------------------
+
+    initial_polarization = np.mean(
+        part.spin,
+        axis=1,
+    )
+
+    initial_y_mean = np.mean(part.y)
+    initial_y_std = np.std(part.y)
 
     if not average_blocks:
-        turns.append(0)
-        polarization_history.append(initial_polarization)
 
-    # Used only for block averaging
-    block_sum = np.zeros(3)
+        turns.append(0)
+
+        polarization_history.append(
+            initial_polarization
+        )
+
+        y_mean_history.append(
+            initial_y_mean
+        )
+
+        y_std_history.append(
+            initial_y_std
+        )
+
+    # ------------------------------------------------------------------
+    # Variables used only for block averaging
+    # ------------------------------------------------------------------
+
+    block_polarization_sum = np.zeros(3)
+
+    block_y_mean_sum = 0.0
+    block_y_std_sum = 0.0
+
     block_count = 0
+
+    # ------------------------------------------------------------------
+    # Tracking loop
+    # ------------------------------------------------------------------
 
     for turn in range(nturns):
 
@@ -125,82 +169,250 @@ def simulate_one_frequency(
             seed=seed if turn == 0 else None,
         )
 
-        # Mean beam polarization after this turn
-        polarization = np.mean(part.spin, axis=1)
+        # --------------------------------------------------------------
+        # Beam quantities after this turn
+        # --------------------------------------------------------------
+
+        polarization = np.mean(
+            part.spin,
+            axis=1,
+        )
+
+        y_mean = np.mean(part.y)
+        y_std = np.std(part.y)
+
+        # --------------------------------------------------------------
+        # Block averaging
+        # --------------------------------------------------------------
 
         if average_blocks:
-            block_sum += polarization
+
+            block_polarization_sum += polarization
+
+            block_y_mean_sum += y_mean
+            block_y_std_sum += y_std
+
             block_count += 1
 
             if block_count == save_every:
-                polarization_history.append(block_sum / block_count)
+
+                polarization_history.append(
+                    block_polarization_sum
+                    / block_count
+                )
+
+                y_mean_history.append(
+                    block_y_mean_sum
+                    / block_count
+                )
+
+                y_std_history.append(
+                    block_y_std_sum
+                    / block_count
+                )
 
                 # End turn of this averaging block
                 turns.append(turn + 1)
 
-                block_sum[:] = 0.0
+                block_polarization_sum[:] = 0.0
+
+                block_y_mean_sum = 0.0
+                block_y_std_sum = 0.0
+
                 block_count = 0
 
+        # --------------------------------------------------------------
+        # Instantaneous saving
+        # --------------------------------------------------------------
+
         elif (turn + 1) % save_every == 0:
-            polarization_history.append(polarization)
-            turns.append(turn + 1)
 
-    # Keep the final incomplete block, if present
+            polarization_history.append(
+                polarization
+            )
+
+            y_mean_history.append(
+                y_mean
+            )
+
+            y_std_history.append(
+                y_std
+            )
+
+            turns.append(
+                turn + 1
+            )
+
+    # ------------------------------------------------------------------
+    # Keep the final incomplete averaging block
+    # ------------------------------------------------------------------
+
     if average_blocks and block_count > 0:
-        polarization_history.append(block_sum / block_count)
-        turns.append(nturns)
 
-    turns = np.asarray(turns, dtype=int)
+        polarization_history.append(
+            block_polarization_sum
+            / block_count
+        )
+
+        y_mean_history.append(
+            block_y_mean_sum
+            / block_count
+        )
+
+        y_std_history.append(
+            block_y_std_sum
+            / block_count
+        )
+
+        turns.append(
+            nturns
+        )
+
+    # ------------------------------------------------------------------
+    # Convert histories to arrays
+    # ------------------------------------------------------------------
+
+    turns = np.asarray(
+        turns,
+        dtype=int,
+    )
 
     polarization_history = np.asarray(
         polarization_history,
         dtype=float,
     ).T
-    
+
+    y_mean_history = np.asarray(
+        y_mean_history,
+        dtype=float,
+    )
+
+    y_std_history = np.asarray(
+        y_std_history,
+        dtype=float,
+    )
+
+    # ------------------------------------------------------------------
+    # Polarization components
+    # ------------------------------------------------------------------
+
     px = polarization_history[0, :]
     py = polarization_history[1, :]
     pz = polarization_history[2, :]
-    
-    # Minimum vertical polarization
+
+    # ------------------------------------------------------------------
+    # Polarization magnitude
+    # ------------------------------------------------------------------
+
+    p_abs = np.linalg.norm(
+        polarization_history,
+        axis=0,
+    )
+
+    # ------------------------------------------------------------------
+    # Summary indices
+    # ------------------------------------------------------------------
+
     i_min = np.argmin(py)
-    
-    # Polarization magnitude versus turn
-    p_abs = np.linalg.norm(polarization_history, axis=0)
-    
-    # Minimum polarization magnitude
-    i_p_abs_min = np.argmin(p_abs)
-    
+
+    i_p_abs_min = np.argmin(
+        p_abs
+    )
+
+    # ------------------------------------------------------------------
+    # Return result
+    # ------------------------------------------------------------------
+
     return {
         "tune": tune,
+
         "turns": turns,
+
+        # Polarization versus turn
         "polarization": polarization_history,
-    
-        # Polarization components versus turn
         "px": px,
         "py": py,
         "pz": pz,
         "p_abs": p_abs,
-    
-        # Initial and final values
-        "polarization_initial": initial_polarization,
-        "polarization_final": polarization_history[:, -1],
-        "py_initial": initial_polarization[1],
-        "py_final": py[-1],
-        "p_abs_initial": np.linalg.norm(initial_polarization),
-        "p_abs_final": p_abs[-1],
-    
-        # Minimum vertical component
-        "py_min": py[i_min],
-        "turn_at_py_min": turns[i_min],
-    
+
+        # Vertical orbit versus turn
+        "y_mean": y_mean_history,
+        "y_std": y_std_history,
+
+        # Initial polarization
+        "polarization_initial":
+            initial_polarization,
+
+        "py_initial":
+            initial_polarization[1],
+
+        "p_abs_initial":
+            np.linalg.norm(
+                initial_polarization
+            ),
+
+        # Initial vertical orbit
+        "y_mean_initial":
+            initial_y_mean,
+
+        "y_std_initial":
+            initial_y_std,
+
+        # Final polarization
+        "polarization_final":
+            polarization_history[:, -1],
+
+        "py_final":
+            py[-1],
+
+        "p_abs_final":
+            p_abs[-1],
+
+        # Final vertical orbit
+        "y_mean_final":
+            y_mean_history[-1],
+
+        "y_std_final":
+            y_std_history[-1],
+
+        # Minimum vertical polarization
+        "py_min":
+            py[i_min],
+
+        "turn_at_py_min":
+            turns[i_min],
+
         # Minimum polarization magnitude
-        "p_abs_min": p_abs[i_p_abs_min],
-        "turn_at_p_abs_min": turns[i_p_abs_min],
-    
+        "p_abs_min":
+            p_abs[i_p_abs_min],
+
+        "turn_at_p_abs_min":
+            turns[i_p_abs_min],
+
+        # Useful vertical-orbit summary quantities
+        "max_abs_y_mean":
+            np.max(
+                np.abs(y_mean_history)
+            ),
+
+        "max_y_std":
+            np.max(
+                y_std_history
+            ),
+
+        "max_3sigma_envelope":
+            np.max(
+                np.abs(y_mean_history)
+                + 3.0 * y_std_history
+            ),
+
         # Final ensemble
         "part_final": part,
-    
+
         # Saving configuration
-        "save_every": save_every,
-        "average_blocks": average_blocks,
+        "save_every":
+            save_every,
+
+        "average_blocks":
+            average_blocks,
     }
