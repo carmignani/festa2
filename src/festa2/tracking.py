@@ -121,6 +121,10 @@ def simulate_one_frequency(
     initial_y_mean = np.mean(part.y)
     initial_y_std = np.std(part.y)
 
+    max_abs_y_mean = abs(initial_y_mean)
+    max_y_std = initial_y_std
+    max_3sigma_envelope = abs(initial_y_mean) + 3.0 * initial_y_std
+    
     if not average_blocks:
 
         turns.append(0)
@@ -181,6 +185,22 @@ def simulate_one_frequency(
         y_mean = np.mean(part.y)
         y_std = np.std(part.y)
 
+        max_abs_y_mean = max(
+            max_abs_y_mean,
+            abs(y_mean),
+        )
+        
+        max_y_std = max(
+            max_y_std,
+            y_std,
+        )
+        
+        max_3sigma_envelope = max(
+            max_3sigma_envelope,
+            abs(y_mean) + 3.0 * y_std,
+        )
+
+        
         # --------------------------------------------------------------
         # Block averaging
         # --------------------------------------------------------------
@@ -391,21 +411,14 @@ def simulate_one_frequency(
 
         # Useful vertical-orbit summary quantities
         "max_abs_y_mean":
-            np.max(
-                np.abs(y_mean_history)
-            ),
-
+            max_abs_y_mean,
+        
         "max_y_std":
-            np.max(
-                y_std_history
-            ),
-
+            max_y_std,
+        
         "max_3sigma_envelope":
-            np.max(
-                np.abs(y_mean_history)
-                + 3.0 * y_std_history
-            ),
-
+            max_3sigma_envelope,
+        
         # Final ensemble
         "part_final": part,
 
