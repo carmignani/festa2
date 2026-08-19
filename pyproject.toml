@@ -4,8 +4,8 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "festa2"
-version = "0.1.0"
-description = "Fast Electron Spin Tracking based on AT and Xsuite"
+version = "2.0.0"
+description = "Fast Electron Spin Tracking for Accelerators"
 readme = "README.md"
 requires-python = ">=3.10"
 
