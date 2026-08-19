@@ -5,7 +5,7 @@ from .spin_map import (
     spin_rotation_matrix,
     initialize_p,
     compute_oam,
-    xs_from_at,
 )
+from .lattice import xs_from_at
 from .tracking import track_1_turn, simulate_one_frequency
 from .scan import scan_frequencies

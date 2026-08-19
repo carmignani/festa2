@@ -63,8 +63,11 @@ def main():
         key=config["lattice_key"],
     )
 
+    energy_eV = ring_at.energy
+    
     _, ring_at_rot = festa2.xs_from_at(
-        ring_at
+        ring_at,
+        energy_eV,
     )
 
     _, frr = at.fast_ring(
