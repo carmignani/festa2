@@ -5,7 +5,8 @@ ESRF-EBS storage ring.
 
 ## Contents
 
-- `betamodel.mat` : AT lattice of the ESRF-EBS storage ring.
+* `betamodel.mat` : ESRF-EBS AT lattice required locally (not distributed
+with this repository).
 - `prepare_scan.py` : generate the scan input (`scan_input.pkl`).
 
 ## Typical workflow
