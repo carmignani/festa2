@@ -46,4 +46,4 @@ htmlcov/
 .idea/
 
 # Local lattice files
-examples/esrf_ebs/betamodel.mat
+betamodel.mat
