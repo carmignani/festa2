@@ -58,6 +58,8 @@ def main():
         tunes[args.index]
     )
 
+    seed = config["tracking_seeds"][args.index]
+
     ring_at = at.load_lattice(
         config["lattice_file"],
         key=config["lattice_key"],
@@ -93,6 +95,7 @@ def main():
         nturns=config["nturns"],
         save_every=config["save_every"],
         average_blocks=config["average_blocks"],
+        seed=seed,
     )
 
     elapsed = time.perf_counter() - start
@@ -134,6 +137,8 @@ def main():
             config["shaker_amplitude_urad"]
         )
 
+    result["tracking_seed"] = seed
+    
     output_file = (
         output_dir
         / f"frequency_{args.index:05d}.pkl"

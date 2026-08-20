@@ -55,6 +55,7 @@ TUNE_OFFSET_MIN = -0.060
 TUNE_OFFSET_MAX = 0.060
 N_FREQUENCIES = 1001
 
+TRACKING_SEED = 12345
 
 def main() -> None:
     start = time.perf_counter()
@@ -189,6 +190,13 @@ def main() -> None:
     # The shaker tune used turn-by-turn is reduced modulo 1.
     tunes = np.mod(spin_tunes_unwrapped, 1.0)
 
+    # Random seed used for tracking at each frequency
+    tracking_seeds = np.full(
+        len(tunes),
+        TRACKING_SEED,
+        dtype=object,
+    )
+
     # ------------------------------------------------------------------
     # Equivalent energies from nu_s = a * gamma
     # ------------------------------------------------------------------
@@ -257,6 +265,9 @@ def main() -> None:
         "tunes": tunes,
         "tune_offsets": tune_offsets,
         "spin_tunes_unwrapped": spin_tunes_unwrapped,
+
+        # Seed
+        "tracking_seeds": tracking_seeds,
 
         # Machine frequencies
         "rf_frequency_Hz": rf_frequency_Hz,
