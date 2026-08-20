@@ -2,9 +2,6 @@
 Spin-map construction utilities for FESTA2.
 """
 
-from copy import deepcopy
-
-import at
 import numpy as np
 import xpart as xp
 from scipy.spatial.transform import Rotation
