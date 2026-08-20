@@ -29,7 +29,7 @@ resonant depolarization with radiation damping and quantum excitation.
 ## Current applications
 
 FESTA is currently used to study resonant depolarization in electron
-storage rings. Current and planbed applications include:
+storage rings. Current and planned applications include:
 
 - ESRF-EBS
 - ESRF (2015 lattice)
@@ -41,7 +41,7 @@ storage rings. Current and planbed applications include:
 
 ```
 src/
-    festa/          Python package
+    festa2/          Python package
 
 scripts/
     Simulation and analysis scripts
