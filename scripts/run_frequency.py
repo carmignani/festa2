@@ -64,14 +64,16 @@ def main():
         config["lattice_file"],
         key=config["lattice_key"],
     )
-
-    energy_eV = ring_at.energy
+    
+    energy_eV = config["energy_eV"]
+    shaker_index = config["shaker_index"]
     
     _, ring_at_rot = festa2.xs_from_at(
         ring_at,
         energy_eV,
+        shaker_index,
     )
-
+    
     _, frr = at.fast_ring(
         ring_at_rot
     )

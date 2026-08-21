@@ -78,11 +78,24 @@ def main() -> None:
         key=LATTICE_KEY,
     )
 
+    shaker_indices = np.flatnonzero(
+        ring_at.get_bool_index("*Shaker*")
+    )
+    
+    if len(shaker_indices) == 0:
+        raise RuntimeError("No shaker element found in lattice")
+    
+    SHAKER_INDEX = int(shaker_indices[0])
+    
+    print("Using shaker index:", SHAKER_INDEX)
+    print("Shaker element:", ring_at[SHAKER_INDEX])
+    
     energy_eV = ring_at.energy
     
     ring_xs, ring_at_rot = festa2.xs_from_at(
         ring_at,
         energy_eV,
+        SHAKER_INDEX,
     )
 
     # ------------------------------------------------------------------
@@ -320,7 +333,9 @@ def main() -> None:
         # Lattice information
         "lattice_file": LATTICE_FILE,
         "lattice_key": LATTICE_KEY,
-
+        "shaker_index": SHAKER_INDEX,
+        "energy_eV": energy_eV,
+        
         "metadata": metadata,
     }
 
